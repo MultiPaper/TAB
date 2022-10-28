@@ -213,13 +213,6 @@ public interface TabPlayer {
     String getTeamName();
 
     /**
-     * Returns user-friendly explanation of team name
-     *
-     * @return  explanation behind team name
-     */
-    String getTeamNameNote();
-
-    /**
      * Returns {@code true} if player is disguised using LibsDisguises, {@code false} if not
      *
      * @return  {@code true} if player is disguised, {@code false} if not

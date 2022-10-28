@@ -146,12 +146,14 @@ public class PlayerList extends TabFeature implements TablistFormatManager {
     public void onServerChange(TabPlayer p, String from, String to) {
         onWorldChange(p, null, null);
         if (TAB.getInstance().getFeatureManager().isFeatureEnabled(TabConstants.Feature.PIPELINE_INJECTION)) return;
-        for (TabPlayer all : TAB.getInstance().getOnlinePlayers()) {
-            if (p.getVersion().getMinorVersion() >= 8) p.sendCustomPacket(new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.UPDATE_DISPLAY_NAME,
-                    new PlayerInfoData(getTablistUUID(all, p), getTabFormat(all, p))), this);
-            if (all.getVersion().getMinorVersion() >= 8) all.sendCustomPacket(new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.UPDATE_DISPLAY_NAME,
-                    new PlayerInfoData(getTablistUUID(p, all), getTabFormat(p, all))), this);
-        }
+        TAB.getInstance().getCPUManager().runTaskLater(300, this, TabConstants.CpuUsageCategory.PLAYER_JOIN, () -> {
+            for (TabPlayer all : TAB.getInstance().getOnlinePlayers()) {
+                if (p.getVersion().getMinorVersion() >= 8) p.sendCustomPacket(new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.UPDATE_DISPLAY_NAME,
+                        new PlayerInfoData(getTablistUUID(all, p), getTabFormat(all, p))), this);
+                if (all.getVersion().getMinorVersion() >= 8) all.sendCustomPacket(new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.UPDATE_DISPLAY_NAME,
+                        new PlayerInfoData(getTablistUUID(p, all), getTabFormat(p, all))), this);
+            }
+        });
     }
 
     @Override
@@ -217,11 +219,11 @@ public class PlayerList extends TabFeature implements TablistFormatManager {
 
     @Override
     public void onPlayerInfo(TabPlayer receiver, PacketPlayOutPlayerInfo info) {
-        if (disabling || !antiOverrideTabList || TabAPI.getInstance().getFeatureManager().isFeatureEnabled(TabConstants.Feature.LAYOUT)) return;
+        if (disabling || !antiOverrideTabList) return;
         if (info.getAction() != EnumPlayerInfoAction.UPDATE_DISPLAY_NAME && info.getAction() != EnumPlayerInfoAction.ADD_PLAYER) return;
         for (PlayerInfoData playerInfoData : info.getEntries()) {
             TabPlayer packetPlayer = TAB.getInstance().getPlayerByTabListUUID(playerInfoData.getUniqueId());
-            if (packetPlayer != null && !isDisabledPlayer(packetPlayer)) {
+            if (packetPlayer != null && !isDisabledPlayer(packetPlayer) && packetPlayer.getTablistUUID() == getTablistUUID(packetPlayer, receiver)) {
                 playerInfoData.setDisplayName(getTabFormat(packetPlayer, receiver));
             }
         }

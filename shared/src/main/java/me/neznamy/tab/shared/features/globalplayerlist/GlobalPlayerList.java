@@ -98,19 +98,26 @@ public class GlobalPlayerList extends TabFeature {
 
     @Override
     public void onServerChange(TabPlayer p, String from, String to) {
-        PacketPlayOutPlayerInfo removeChanged = getRemovePacket(p);
-        for (TabPlayer all : TAB.getInstance().getOnlinePlayers()) {
-            if (all == p) continue;
-            if (shouldSee(all, p)) {
-                all.sendCustomPacket(getAddPacket(p, all), this);
-            } else {
-                all.sendCustomPacket(removeChanged, this);
+        Runnable r = () -> {
+            PacketPlayOutPlayerInfo removeChanged = getRemovePacket(p);
+            for (TabPlayer all : TAB.getInstance().getOnlinePlayers()) {
+                if (all == p) continue;
+                if (shouldSee(all, p)) {
+                    all.sendCustomPacket(getAddPacket(p, all), this);
+                } else {
+                    all.sendCustomPacket(removeChanged, this);
+                }
+                if (shouldSee(p, all)) {
+                    p.sendCustomPacket(getAddPacket(all, p), this);
+                } else {
+                    p.sendCustomPacket(getRemovePacket(all), this);
+                }
             }
-            if (shouldSee(p, all)) {
-                p.sendCustomPacket(getAddPacket(all, p), this);
-            } else {
-                p.sendCustomPacket(getRemovePacket(all), this);
-            }
+        };
+        if (!TAB.getInstance().getFeatureManager().isFeatureEnabled(TabConstants.Feature.PIPELINE_INJECTION)) {
+            TAB.getInstance().getCPUManager().runTaskLater(200, this, TabConstants.CpuUsageCategory.SERVER_SWITCH, r);
+        } else {
+            r.run();
         }
     }
 
@@ -133,7 +140,7 @@ public class GlobalPlayerList extends TabFeature {
                         p.getSkin(),
                         p.getPing(),
                         vanishedAsSpectators && p.isVanished() ? EnumGamemode.SPECTATOR : EnumGamemode.CREATIVE,
-                        format,
+                        viewer.getVersion().getMinorVersion() >= 8 ? format : null,
                         fillProfileKey ? p.getProfilePublicKey() : null
                 )
         );
