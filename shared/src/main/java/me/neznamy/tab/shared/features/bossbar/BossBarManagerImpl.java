@@ -36,7 +36,7 @@ public class BossBarManagerImpl extends TabFeature implements BossBarManager {
     private final List<BossBar> announcements = new ArrayList<>();
 
     //players with toggled BossBar
-    private final List<String> bossBarOffPlayers;
+    private final List<String> bossBarOffPlayers = rememberToggleChoice ? TAB.getInstance().getConfiguration().getPlayerDataFile().getStringList("bossbar-off", new ArrayList<>()) : Collections.emptyList();
 
     //time when BossBar announce ends, used for placeholder
     private long announceEndTime;
@@ -54,11 +54,6 @@ public class BossBarManagerImpl extends TabFeature implements BossBarManager {
             if (!line.isAnnouncementBar()) defaultBars.add(bar.toString());
         }
         lineValues = lines.values().toArray(new BossBar[0]);
-        if (rememberToggleChoice) {
-            bossBarOffPlayers = TAB.getInstance().getConfiguration().getPlayerDataFile().getStringList("bossbar-off", new ArrayList<>());
-        } else {
-            bossBarOffPlayers = Collections.emptyList();
-        }
         TAB.getInstance().getPlaceholderManager().registerServerPlaceholder(TabConstants.Placeholder.COUNTDOWN, 100, () -> (announceEndTime - System.currentTimeMillis()) / 1000);
         TAB.getInstance().debug(String.format("Loaded BossBar feature with parameters disabledWorlds=%s, disabledServers=%s, toggleCommand=%s, defaultBars=%s, hiddenByDefault=%s, remember_toggle_choice=%s",
                 Arrays.toString(disabledWorlds), Arrays.toString(disabledServers), toggleCommand, defaultBars, hiddenByDefault, rememberToggleChoice));
@@ -111,6 +106,7 @@ public class BossBarManagerImpl extends TabFeature implements BossBarManager {
             line.removePlayer(p); //remove all BossBars and then resend them again to keep them displayed in defined order
         }
         showBossBars(p, defaultBars);
+        showBossBars(p, announcements.stream().map(BossBar::getName).collect(Collectors.toList()));
     }
 
     @Override
@@ -178,7 +174,6 @@ public class BossBarManagerImpl extends TabFeature implements BossBarManager {
      *          list of BossBars to check
      */
     private void showBossBars(TabPlayer p, List<String> bars) {
-        if (bars == null) return;
         for (String defaultBar : bars) {
             BossBarLine bar = (BossBarLine) lines.get(defaultBar);
             if (bar.isConditionMet(p) && !bar.containsPlayer(p)) {
@@ -278,6 +273,7 @@ public class BossBarManagerImpl extends TabFeature implements BossBarManager {
         BossBar line = lines.get(bossBar);
         if (line == null) throw new IllegalArgumentException("No registered BossBar found with name " + bossBar);
         TAB.getInstance().getCPUManager().runTask(() -> {
+            TAB.getInstance().getPlaceholderManager().getPlaceholder(TabConstants.Placeholder.COUNTDOWN).markAsUsed();
             announcements.add(line);
             announceEndTime = System.currentTimeMillis() + duration* 1000L;
             for (TabPlayer all : TAB.getInstance().getOnlinePlayers()) {

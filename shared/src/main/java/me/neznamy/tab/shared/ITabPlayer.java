@@ -9,9 +9,9 @@ import me.neznamy.tab.api.chat.IChatBaseComponent;
 import me.neznamy.tab.api.placeholder.PlayerPlaceholder;
 import me.neznamy.tab.api.protocol.*;
 import me.neznamy.tab.api.protocol.PacketPlayOutChat.ChatMessageType;
-import me.neznamy.tab.api.team.TeamManager;
 import me.neznamy.tab.api.util.Preconditions;
 import me.neznamy.tab.shared.event.impl.PlayerLoadEventImpl;
+import me.neznamy.tab.shared.features.sorting.Sorting;
 import org.geysermc.floodgate.api.FloodgateApi;
 
 /**
@@ -46,12 +46,6 @@ public abstract class ITabPlayer implements TabPlayer {
 
     /** Player's permission group override using API */
     private String temporaryGroup;
-
-    /** Player's personal scoreboard team name */
-    private String teamName;
-
-    /** Note explaining the team name, used in debug command */
-    private String teamNameNote;
 
     /** Player's game type, {@code true} for Bedrock, {@code false} for Java */
     private final boolean bedrockPlayer;
@@ -144,26 +138,6 @@ public abstract class ITabPlayer implements TabPlayer {
     @Override
     public boolean setProperty(TabFeature feature, String identifier, String rawValue) {
         return setProperty(feature, identifier, rawValue, null, false);
-    }
-
-    /**
-     * Sets team name to given value
-     *
-     * @param   name
-     *          Team name to use
-     */
-    public void setTeamName(String name) {
-        teamName = name;
-    }
-
-    /**
-     * Sets team name note to given value
-     *
-     * @param   note
-     *          New team name note
-     */
-    public void setTeamNameNote(String note) {
-        teamNameNote = note;
     }
 
     /**
@@ -391,20 +365,15 @@ public abstract class ITabPlayer implements TabPlayer {
     }
 
     @Override
-    public String getTeamName() {
-        TeamManager teams = TAB.getInstance().getTeamManager();
-        if (teams != null && teams.getForcedTeamName(this) != null) return teams.getForcedTeamName(this);
-        return teamName;
+    public boolean isBedrockPlayer() {
+        return bedrockPlayer;
     }
 
     @Override
-    public String getTeamNameNote() {
-        return teamNameNote;
-    }
-    
-    @Override
-    public boolean isBedrockPlayer() {
-        return bedrockPlayer;
+    public String getTeamName() {
+        Sorting sorting = (Sorting) TAB.getInstance().getFeatureManager().getFeature(TabConstants.Feature.SORTING);
+        if (sorting == null) return null;
+        return sorting.getShortTeamName(this);
     }
 
     @Override
