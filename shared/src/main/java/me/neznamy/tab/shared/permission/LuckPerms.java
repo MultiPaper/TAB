@@ -31,7 +31,7 @@ public class LuckPerms extends PermissionPlugin {
         try {
             if (getVersion().startsWith("4")) return UPDATE_MESSAGE;
             net.luckperms.api.LuckPerms api = LuckPermsProvider.get();
-            User user = api.getUserManager().getUser(p.getUniqueId());
+            User user = api.getUserManager().loadUser(p.getUniqueId(), p.getName()).join();
             if (user == null) return TabConstants.NO_GROUP; //pretend like nothing is wrong
             return user.getPrimaryGroup();
         } catch (Exception e) {
@@ -75,7 +75,7 @@ public class LuckPerms extends PermissionPlugin {
         try {
             if (getVersion().startsWith("4")) return UPDATE_MESSAGE;
             net.luckperms.api.LuckPerms api = LuckPermsProvider.get();
-            User user = api.getUserManager().getUser(p.getUniqueId());
+            User user = api.getUserManager().loadUser(p.getUniqueId(), p.getName()).join();
             if (user == null) return "";
             Optional<QueryOptions> options = LuckPermsProvider.get().getContextManager().getQueryOptions(user);
             if (!options.isPresent()) return "";
